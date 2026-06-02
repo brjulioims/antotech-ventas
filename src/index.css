@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap");
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", system-ui, sans-serif;
+  background: #f5f8fd;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  padding: 12px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+}
+
+.input:focus {
+  border-color: #2563eb;
+}
