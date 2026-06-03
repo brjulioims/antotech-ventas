@@ -36,7 +36,11 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
     }
 
     if (Number(cantidad) > selectedProduct.existencias) {
-      Swal.fire("Existencia insuficiente", "No hay unidades suficientes", "error");
+      Swal.fire({
+        title: selectedProduct.nombre,
+        text: `No hay unidades suficientes. Disponibles: ${selectedProduct.existencias}`,
+        icon: "error",
+      });
       return;
     }
 
