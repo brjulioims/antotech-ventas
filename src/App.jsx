@@ -12,7 +12,6 @@ import { initialproductos, initialventas, initialgastos } from "./components/ser
 
 const pageByPath = {
   "/login": "login",
-  "/": "dashboard",
   "/dashboard": "dashboard",
   "/productos": "productos",
   "/ventas": "ventas",
@@ -94,6 +93,11 @@ export default function App() {
     window.history.replaceState({}, "", "/login");
   };
 
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    setActivePage("dashboard");
+  };
+
   const pages = {
     dashboard: (
       <Dashboard
@@ -118,7 +122,7 @@ export default function App() {
   };
 
   if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
