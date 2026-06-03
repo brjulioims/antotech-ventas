@@ -2,19 +2,22 @@ import {
   DollarSign,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
   Receipt,
   ShoppingBag,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const menu = [
   { id: "dashboard", label: "Inicio", icon: LayoutDashboard },
-  { id: "products", label: "Productos", icon: ShoppingBag },
-  { id: "sales", label: "Ventas", icon: DollarSign },
-  { id: "expenses", label: "Gastos", icon: Receipt },
-  { id: "inventory", label: "Inventario", icon: Package },
-  { id: "reports", label: "Reportes", icon: FileText },
+  { id: "productos", label: "Productos", icon: ShoppingBag },
+  { id: "ventas", label: "Ventas", icon: DollarSign },
+  { id: "gastos", label: "Gastos", icon: Receipt },
+  { id: "inventario", label: "Inventario", icon: Package },
+  { id: "reportes", label: "Reportes", icon: FileText },
+  { id: "logout", label:"Cerrar Sesión", icon: LogOut}
 ];
 
 export default function Sidebar({
@@ -22,10 +25,11 @@ export default function Sidebar({
   setActivePage,
   isSidebarOpen,
   setIsSidebarOpen,
+  onLogout,
 }) {
   return (
     <aside
-      className={`flex-none self-start bg-[#eef3fb] p-3 transition-all ${
+      className={`flex-none self-start bg-[#f5f8fd] p-3 transition-all ${
         isSidebarOpen ? "w-70" : "w-23"
       }`}
     >
@@ -67,7 +71,26 @@ export default function Sidebar({
             return (
               <button
                 key={item.id}
-                onClick={() => setActivePage(item.id)}
+                onClick={async () => {
+                  if (item.id === "logout") {
+                    const result = await Swal.fire({
+                      title: "¿Estás seguro?",
+                      text: "¿Deseas cerrar tu sesión actual?",
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonText: "Si, cerrar sesión",
+                      confirmButtonColor: "#163aaa",
+                      cancelButtonText: "Cancelar",
+                    });
+
+                    if (!result.isConfirmed) return;
+
+                    onLogout?.();
+                    return;
+                  }
+
+                  setActivePage(item.id);
+                }}
                 className={`flex w-full items-center rounded-2xl text-left text-[15px] transition ${
                   isSidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-0 py-3"
                 } ${

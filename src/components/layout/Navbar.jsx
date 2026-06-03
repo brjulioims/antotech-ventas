@@ -2,11 +2,11 @@ import { Menu } from "lucide-react";
 
 const pageTitles = {
   dashboard: "Panel de ventas",
-  products: "Productos",
-  sales: "Ventas",
-  expenses: "Gastos",
-  inventory: "Inventario",
-  reports: "Reportes",
+  productos: "Productos",
+  ventas: "Ventas",
+  gastos: "Gastos",
+  inventorio: "Inventario",
+  reportes: "Reportes",
 };
 
 export default function Navbar({ activePage, isSidebarOpen, setIsSidebarOpen }) {

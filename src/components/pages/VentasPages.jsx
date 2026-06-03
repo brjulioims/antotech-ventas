@@ -5,11 +5,22 @@ import Swal from "sweetalert2";
 import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
 
-export default function VentasPage({ products, setProducts, sales, setSales }) {
+export default function VentasPage({ productos, setproductos, ventas, setventas, }) {
   const [productId, setProductId] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [cantidad, setcantidad] = useState(1);
+  const [precio, setPrecio] = useState("");
 
-  const selectedProduct = products.find((p) => p.id === Number(productId));
+  const selectedProduct = productos.find((p) => p.id === Number(productId));
+
+  const totalCantidad = ventas.reduce(
+    (acc, venta) => acc + venta.cantidad,
+    0
+  );
+
+  const totalVentas = ventas.reduce(
+    (acc, venta) => acc + venta.total,
+    0
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,13 +30,18 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
       return;
     }
 
-    if (Number(quantity) <= 0) {
+    if (Number(cantidad) <= 0) {
       Swal.fire("Cantidad invalida", "Ingresa una cantidad mayor a 0", "warning");
       return;
     }
 
-    if (Number(quantity) > selectedProduct.stock) {
-      Swal.fire("Stock insuficiente", "No hay unidades suficientes", "error");
+    if (Number(cantidad) > selectedProduct.existencias) {
+      Swal.fire("Existencia insuficiente", "No hay unidades suficientes", "error");
+      return;
+    }
+
+    if (Number(precio) <= 0) {
+      Swal.fire("Precio invalido", "Ingresa un precio mayor a 0", "warning");
       return;
     }
 
@@ -35,34 +51,44 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Si, guardar",
+      confirmButtonColor: "#163aaa",
       cancelButtonText: "Cancelar",
     });
 
     if (!result.isConfirmed) return;
 
-    const total = selectedProduct.price * Number(quantity);
+    const total = Number(precio) * Number(cantidad);
 
-    const newSale = {
+    const newventa = {
       id: Date.now(),
-      productName: selectedProduct.name,
-      quantity: Number(quantity),
+      nombredelProducto: selectedProduct.nombre,
+      cantidad: Number(cantidad),
       total,
       date: new Date().toISOString().slice(0, 10),
     };
 
-    setSales([...sales, newSale]);
+    setventas([...ventas, newventa]);
 
-    setProducts(
-      products.map((p) =>
+    setproductos(
+      productos.map((p) =>
         p.id === selectedProduct.id
-          ? { ...p, stock: p.stock - Number(quantity) }
+          ? { ...p, existencias: p.existencias - Number(cantidad) }
           : p
       )
     );
 
     setProductId("");
-    setQuantity(1);
-    Swal.fire("Se agrego con exito", "La venta fue registrada", "success");
+    setcantidad(1);
+    setPrecio("");
+    Swal.fire({
+      toast: true,
+      position: "bottom-end",
+      icon: "success",
+      text: "La venta fue registrada",
+      showConfirmButton: false,
+      timer: 2500,
+      timerProgressBar: true,
+    });
   };
 
   return (
@@ -70,18 +96,23 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
       <div className="grid grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="mb-4 font-bold text-indigo-950">Nueva venta</h3>
-
           <form onSubmit={handleSubmit} className="space-y-3">
             <select
               className="input"
               value={productId}
-              onChange={(e) => setProductId(e.target.value)}
+              onChange={(e) => {
+                const nextId = e.target.value;
+                setProductId(nextId);
+
+                const producto = productos.find((p) => p.id === Number(nextId));
+                setPrecio(producto ? producto.precio : "");
+              }}
               required
             >
               <option value="">Seleccionar producto</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} - Stock: {product.stock}
+              {productos.map((producto) => (
+                <option key={producto.id} value={producto.id}>
+                  {producto.nombre}
                 </option>
               ))}
             </select>
@@ -91,16 +122,26 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
               type="number"
               min="1"
               placeholder="Cantidad"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              value={cantidad}
+              onChange={(e) => setcantidad(e.target.value)}
+              required
+            />
+
+            <input
+              className="input"
+              type="number"
+              min="1"
+              placeholder="Precio de venta"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
               required
             />
 
             <div className="rounded-lg bg-slate-50 p-4 text-sm">
               Total:{" "}
               <strong>
-                {selectedProduct
-                  ? FormatoDinero(selectedProduct.price * Number(quantity))
+                {selectedProduct && precio
+                  ? FormatoDinero(Number(precio) * Number(cantidad))
                   : "$0"}
               </strong>
             </div>
@@ -109,13 +150,13 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
           </form>
         </Card>
 
-        <Table
-          title="Historial de ventas"
-          subtitle="Registro reciente de movimientos comerciales"
-          badge={`${sales.length} registros`}
-          className="col-span-2"
-          contentClassName="overflow-hidden rounded-xl border border-slate-100"
-        >
+          <Table
+            title="Historial de ventas"
+            subtitle="Registro reciente de movimientos comerciales"
+            badge={`${ventas.length} Ventas`}
+            className="col-span-2"
+            contentClassName="overflow-hidden rounded-xl border border-slate-100"
+          >
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-slate-500">
@@ -127,17 +168,30 @@ export default function VentasPage({ products, setProducts, sales, setSales }) {
             </thead>
 
             <tbody>
-              {sales.map((sale) => (
-                <tr key={sale.id} className="border-t border-slate-100 text-slate-700">
-                  <td className="px-4 py-3">{sale.date}</td>
-                  <td className="px-4 py-3 font-medium">{sale.productName}</td>
-                  <td className="px-4 py-3">{sale.quantity}</td>
+              {ventas.map((venta) => (
+                <tr key={venta.id} className="border-t border-slate-100 text-slate-700">
+                  <td className="px-4 py-3">{venta.date}</td>
+                  <td className="px-4 py-3 font-medium">{venta.nombredelProducto}</td>
+                  <td className="px-4 py-3">{venta.cantidad}</td>
                   <td className="px-4 py-3 font-semibold text-emerald-600">
-                    {FormatoDinero(sale.total)}
+                    {FormatoDinero(venta.total)}
                   </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold">
+                <td className="px-4 py-3" colSpan={2}>
+                  Totales
+                </td>
+                <td className="px-4 py-3">
+                  {totalCantidad}
+                </td>
+                <td className="px-4 py-3 text-emerald-600">
+                  {FormatoDinero(totalVentas)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </Table>
       </div>

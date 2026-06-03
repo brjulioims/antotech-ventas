@@ -9,27 +9,26 @@ import Card from "../ui/Card";
 import Table from "../ui/Table";
 import { FormatoDinero } from "../ui/FormatoDinero";
 
-export default function Dashboard({ products, sales, expenses, stats }) {
-  const latestDate = [...sales.map((sale) => sale.date), ...expenses.map((expense) => expense.date)]
-    .sort()
-    .at(-1);
-  const dailySales = sales
-    .filter((sale) => sale.date === latestDate)
-    .reduce((acc, sale) => acc + Number(sale.total), 0);
-  const dailyExpenses = expenses
-    .filter((expense) => expense.date === latestDate)
-    .reduce((acc, expense) => acc + Number(expense.amount), 0);
+export default function Dashboard({ productos, ventas, gastos}) {
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const dailyventas = ventas
+    .filter((venta) => venta.date === todayKey)
+    .reduce((acc, venta) => acc + Number(venta.total), 0);
+  const dailygastos = gastos
+    .filter((gasto) => gasto.date === todayKey)
+    .reduce((acc, gasto) => acc + Number(gasto.monto), 0);
   const chartData = [
     {
       name: "Ingresos",
-      value: dailySales,
+      value: dailyventas,
       color: "#10b981",
       bg: "bg-emerald-50",
       text: "text-emerald-600",
     },
     {
       name: "Gastos",
-      value: dailyExpenses,
+      value: dailygastos,
       color: "#f43f5e",
       bg: "bg-rose-50",
       text: "text-rose-600",
@@ -44,7 +43,7 @@ export default function Dashboard({ products, sales, expenses, stats }) {
             <div>
               <h2 className="font-bold text-indigo-950">Resumen diario</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Comparativo rapido del dia {latestDate ?? "-"}
+                Comparativo rapido del dia {todayKey}
               </p>
             </div>
 
@@ -93,16 +92,14 @@ export default function Dashboard({ products, sales, expenses, stats }) {
           </div>
         </Card>
 
-        <Card className="p-6 text-center">
-          <h2 className="mb-8 font-bold text-indigo-950">Productos</h2>
+        <Card className="p-8 text-center">
+          <h2 className="mb-23 font-bold text-indigo-950">Productos</h2>
 
           <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border-8 border-slate-200 text-3xl font-black text-slate-700">
-            {products.length}
+            {productos.length}
           </div>
 
           <p className="mt-6 text-sm font-semibold">Productos registrados</p>
-          <p className="mt-8 text-sm text-slate-400">Stock bajo</p>
-          <p className="text-xl font-bold text-green-600">↑ {stats.lowStock}</p>
         </Card>
       </div>
 
@@ -110,19 +107,19 @@ export default function Dashboard({ products, sales, expenses, stats }) {
         <Table
           title="Ultimas ventas"
           subtitle="Movimientos mas recientes"
-          badge={`${sales.length} total`}
+          badge={`${ventas.length} total`}
           contentClassName="space-y-3"
         >
-          {sales.slice(-5).reverse().map((sale) => (
+          {ventas.slice(-5).reverse().map((venta) => (
             <div
-              key={sale.id}
+              key={venta.id}
               className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
             >
               <div>
-                <p className="font-semibold text-slate-800">{sale.productName}</p>
-                <p className="text-slate-500">{sale.date}</p>
+                <p className="font-semibold text-slate-800">{venta.nombredelProducto}</p>
+                <p className="text-slate-500">{venta.date}</p>
               </div>
-              <strong className="text-emerald-600">{FormatoDinero(sale.total)}</strong>
+              <strong className="text-emerald-600">{FormatoDinero(venta.total)}</strong>
             </div>
           ))}
         </Table>
@@ -130,20 +127,20 @@ export default function Dashboard({ products, sales, expenses, stats }) {
         <Table
           title="Ultimos gastos"
           subtitle="Egresos mas recientes"
-          badge={`${expenses.length} total`}
+          badge={`${gastos.length} total`}
           contentClassName="space-y-3"
         >
-          {expenses.slice(-5).reverse().map((expense) => (
+          {gastos.slice(-5).reverse().map((gasto) => (
             <div
-              key={expense.id}
+              key={gasto.id}
               className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
             >
               <div>
-                <p className="font-semibold text-slate-800">{expense.description}</p>
-                <p className="text-slate-500">{expense.date}</p>
+                <p className="font-semibold text-slate-800">{gasto.descripcion}</p>
+                <p className="text-slate-500">{gasto.date}</p>
               </div>
               <strong className="text-rose-600">
-                {FormatoDinero(expense.amount)}
+                {FormatoDinero(gasto.monto)}
               </strong>
             </div>
           ))}

@@ -32,13 +32,43 @@ function getPeriodKey(date, filter) {
   return `${year}-${month}-${day}`;
 }
 
-export default function InformePage({ sales, expenses }) {
-  const [activeFilter, setActiveFilter] = useState("daily");
+function formatPeriodLabel(period, filter) {
+  if (period === "-") return period;
+
+  if (filter === "daily") {
+    return new Intl.DateTimeFormat("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(`${period}T00:00:00`));
+  }
+
+  if (filter === "monthly") {
+    const [year, month] = period.split("-");
+    return new Intl.DateTimeFormat("es-CO", {
+      month: "long",
+      year: "numeric",
+    }).format(new Date(`${year}-${month}-01T00:00:00`));
+  }
+
+  if (filter === "quarterly") {
+    const [year, quarter] = period.split("-T");
+    return `Trimestre ${quarter} de ${year}`;
+  }
+
+  return period;
+}
+
+export default function InformePage({ ventas, gastos }) {
+  const [activeFilter, setActiveFilter] = useState("monthly");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const selectedPeriodKey = selectedDate ? getPeriodKey(selectedDate, activeFilter) : "";
 
-  const filteredItems = [...sales, ...expenses].filter((item) =>
-    selectedDate ? item.date === selectedDate : true
+  const filteredItems = [...ventas, ...gastos].filter((item) =>
+    selectedDate ? getPeriodKey(item.date, activeFilter) === selectedPeriodKey : true
   );
 
   const periodMap = filteredItems.reduce((acc, item) => {
@@ -48,18 +78,18 @@ export default function InformePage({ sales, expenses }) {
       acc[key] = {
         period: key,
         income: 0,
-        expenses: 0,
-        salesCount: 0,
+        gastos: 0,
+        ventasCount: 0,
       };
     }
 
     if ("total" in item) {
       acc[key].income += Number(item.total);
-      acc[key].salesCount += 1;
+      acc[key].ventasCount += 1;
     }
 
-    if ("amount" in item) {
-      acc[key].expenses += Number(item.amount);
+    if ("monto" in item) {
+      acc[key].gastos += Number(item.monto);
     }
 
     return acc;
@@ -68,15 +98,15 @@ export default function InformePage({ sales, expenses }) {
   const periodData = Object.values(periodMap)
     .map((period) => ({
       ...period,
-      profit: period.income - period.expenses,
+      profit: period.income - period.gastos,
     }))
     .sort((a, b) => b.period.localeCompare(a.period));
 
   const currentPeriod = periodData[0] ?? {
     income: 0,
-    expenses: 0,
+    gastos: 0,
     profit: 0,
-    salesCount: 0,
+    ventasCount: 0,
     period: "-",
   };
 
@@ -88,6 +118,10 @@ export default function InformePage({ sales, expenses }) {
   const filterLabel =
     filters.find((filter) => filter.id === activeFilter)?.label.toLowerCase() ??
     "diario";
+  const activePeriodKey = selectedDate
+    ? getPeriodKey(selectedDate, activeFilter)
+    : getPeriodKey(todayKey, activeFilter);
+  const currentPeriodLabel = formatPeriodLabel(activePeriodKey, activeFilter);
   const chartData = [
     {
       name: "Ingresos",
@@ -98,7 +132,7 @@ export default function InformePage({ sales, expenses }) {
     },
     {
       name: "Gastos",
-      value: currentPeriod.expenses,
+      value: currentPeriod.gastos,
       color: "#f43f5e",
       bg: "bg-rose-50",
       text: "text-rose-600",
@@ -163,7 +197,7 @@ export default function InformePage({ sales, expenses }) {
           <button
             type="button"
             onClick={() => {
-              setActiveFilter("daily");
+              setActiveFilter("monthly");
               setSelectedDate("");
             }}
             className="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-600"
@@ -181,31 +215,31 @@ export default function InformePage({ sales, expenses }) {
       </Modal>
 
       <div className="mb-6 grid grid-cols-4 gap-6">
-        <Card className="p-6">
+        <Card className="p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y">
           <p className="text-sm text-slate-400">Ingresos {filterLabel}s</p>
           <h3 className="text-3xl font-black text-green-600">
             {FormatoDinero(currentPeriod.income)}
           </h3>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y">
           <p className="text-sm text-slate-400">Gastos {filterLabel}s</p>
           <h3 className="text-3xl font-black text-red-600">
-            {FormatoDinero(currentPeriod.expenses)}
+            {FormatoDinero(currentPeriod.gastos)}
           </h3>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y">
           <p className="text-sm text-slate-400">Ganancia {filterLabel}</p>
           <h3 className="text-3xl font-black text-blue-600">
             {FormatoDinero(currentPeriod.profit)}
           </h3>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y">
           <p className="text-sm text-slate-400">Periodo actual</p>
           <h3 className="text-3xl font-black text-emerald-600">
-            {currentPeriod.period}
+            {currentPeriodLabel}
           </h3>
           <p className="mt-2 text-sm text-slate-500">
             Ultimo registro {filterLabel} disponible
@@ -272,7 +306,7 @@ export default function InformePage({ sales, expenses }) {
         <Card className="p-6">
           <p className="text-sm text-slate-400">Ventas registradas</p>
           <h3 className="text-3xl font-black text-rose-600">
-            {currentPeriod.salesCount}
+            {currentPeriod.ventasCount}
           </h3>
           <p className="mt-2 text-sm text-slate-500">
             Conteo del periodo seleccionado
@@ -295,7 +329,7 @@ export default function InformePage({ sales, expenses }) {
                 <div className="flex items-center justify-between gap-3">
                   <strong className="text-slate-800">{period.period}</strong>
                   <span className="text-sm text-slate-500">
-                    {period.salesCount} ventas
+                    {period.ventasCount} ventas
                   </span>
                 </div>
 
@@ -304,7 +338,7 @@ export default function InformePage({ sales, expenses }) {
                     Ingresos: <strong>{FormatoDinero(period.income)}</strong>
                   </p>
                   <p className="text-slate-600">
-                    Gastos: <strong>{FormatoDinero(period.expenses)}</strong>
+                    Gastos: <strong>{FormatoDinero(period.gastos)}</strong>
                   </p>
                   <p className="text-slate-600">
                     Ganancia: <strong>{FormatoDinero(period.profit)}</strong>

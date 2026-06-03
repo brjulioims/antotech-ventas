@@ -5,23 +5,26 @@ import Swal from "sweetalert2";
 import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
 
-export default function GastosPage({ expenses, setExpenses }) {
+export default function GastosPage({ gastos, setgastos }) {
   const [form, setForm] = useState({
-    category: "",
-    description: "",
-    amount: "",
+    categoria: "",
+    descripcion: "",
+    monto: "",
     date: new Date().toISOString().slice(0, 10),
   });
+
+  const capitalizeFirstLetter = (text) =>
+  text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.category || !form.description || !form.date) {
+    if (!form.categoria || !form.descripcion || !form.date) {
       Swal.fire("Campos requeridos", "Completa todos los campos", "warning");
       return;
     }
 
-    if (Number(form.amount) <= 0) {
+    if (Number(form.monto) <= 0) {
       Swal.fire("Monto invalido", "Ingresa un monto mayor a 0", "warning");
       return;
     }
@@ -32,28 +35,37 @@ export default function GastosPage({ expenses, setExpenses }) {
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Si, guardar",
+      confirmButtonColor: "#163aaa",
       cancelButtonText: "Cancelar",
     });
 
     if (!result.isConfirmed) return;
 
-    const newExpense = {
+    const newgastos = {
       id: Date.now(),
-      category: form.category,
-      description: form.description,
-      amount: Number(form.amount),
+      categoria: form.categoria,
+      descripcion: form.descripcion,
+      monto: Number(form.monto),
       date: form.date,
     };
 
-    setExpenses([...expenses, newExpense]);
+    setgastos([...gastos, newgastos]);
 
     setForm({
-      category: "",
-      description: "",
-      amount: "",
+      categoria: "",
+      descripcion: "",
+      monto: "",
       date: new Date().toISOString().slice(0, 10),
     });
-    Swal.fire("Se agrego con exito", "El gasto fue registrado", "success");
+      Swal.fire({
+      toast: true,
+      position: "bottom-end",
+      icon: "success",
+      text: "El gasto fue registrado",
+      showConfirmButton: false,
+      timer: 2500,
+      timerProgressBar: true,
+    });
   };
 
   return (
@@ -66,16 +78,16 @@ export default function GastosPage({ expenses, setExpenses }) {
             <input
               className="input"
               placeholder="Categoria"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              value={form.categoria}
+              onChange={(e) => setForm({ ...form, categoria: capitalizeFirstLetter(e.target.value) })}
               required
             />
 
             <input
               className="input"
               placeholder="Descripcion"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              value={form.descripcion}
+              onChange={(e) => setForm({ ...form, descripcion: capitalizeFirstLetter(e.target.value) })}
               required
             />
 
@@ -83,8 +95,8 @@ export default function GastosPage({ expenses, setExpenses }) {
               className="input"
               type="number"
               placeholder="Monto"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              value={form.monto}
+              onChange={(e) => setForm({ ...form, monto: e.target.value })}
               required
             />
 
@@ -103,7 +115,7 @@ export default function GastosPage({ expenses, setExpenses }) {
         <Table
           title="Historial de gastos"
           subtitle="Control de egresos registrados"
-          badge={`${expenses.length} registros`}
+          badge={`${gastos.length} registros`}
           className="col-span-2"
           contentClassName="overflow-hidden rounded-xl border border-slate-100"
         >
@@ -118,17 +130,29 @@ export default function GastosPage({ expenses, setExpenses }) {
             </thead>
 
             <tbody>
-              {expenses.map((expense) => (
-                <tr key={expense.id} className="border-t border-slate-100 text-slate-700">
-                  <td className="px-4 py-3">{expense.date}</td>
-                  <td className="px-4 py-3 font-medium">{expense.category}</td>
-                  <td className="px-4 py-3">{expense.description}</td>
+              {gastos.map((gasto) => (
+                <tr key={gasto.id} className="border-t border-slate-100 text-slate-700">
+                  <td className="px-4 py-3">{gasto.date}</td>
+                  <td className="px-4 py-3 font-medium">{gasto.categoria}</td>
+                  <td className="px-4 py-3">{gasto.descripcion}</td>
                   <td className="px-4 py-3 font-semibold text-rose-600">
-                    {FormatoDinero(expense.amount)}
+                    {FormatoDinero(gasto.monto)}
                   </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold">
+                <td className="px-4 py-3 ">Totales</td>
+                <td className="px-4 py-3 font-semibold"></td>
+                <td className="px-4 py-3 font-semibold"></td>
+                <td className="px-4 py-3 font-semibold text-rose-600">
+                  {FormatoDinero(
+                    gastos.reduce((total, gasto) => total + gasto.monto, 0)
+                  )}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </Table>
       </div>
