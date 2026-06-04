@@ -1,26 +1,111 @@
 import { useState } from "react";
+import { Calendar } from "lucide-react";
 import Card from "../ui/Card";
 import { FormatoDinero } from "../ui/FormatoDinero";
 import Swal from "sweetalert2";
 import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
+import Modal from "../ui/Modal";
+
+const CALENDAR_PERIOD_OPTIONS = [
+  { value: "today", label: "Hoy" },
+  { value: "week", label: "Esta semana" },
+  { value: "month", label: "Este mes" },
+  { value: "quarter", label: "Este trimestre" },
+  { value: "year", label: "Este año" },
+  { value: "custom", label: "Personalizado" },
+];
+
+function getQuarter(date) {
+  return Math.floor(date.getMonth() / 3) + 1;
+}
+
+function getDateRangeByPeriod(period) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const format = (date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(date.getDate()).padStart(2, "0")}`;
+
+  if (period === "today") {
+    return { startDate: format(today), endDate: format(today) };
+  }
+
+  if (period === "week") {
+    const firstDay = new Date(today);
+    const day = today.getDay() || 7;
+    firstDay.setDate(today.getDate() - day + 1);
+
+    return { startDate: format(firstDay), endDate: format(today) };
+  }
+
+  if (period === "month") {
+    return {
+      startDate: format(new Date(year, month, 1)),
+      endDate: format(today),
+    };
+  }
+
+  if (period === "quarter") {
+    const firstMonth = (getQuarter(today) - 1) * 3;
+
+    return {
+      startDate: format(new Date(year, firstMonth, 1)),
+      endDate: format(today),
+    };
+  }
+
+  if (period === "year") {
+    return {
+      startDate: format(new Date(year, 0, 1)),
+      endDate: format(today),
+    };
+  }
+
+  return { startDate: "", endDate: "" };
+}
 
 export default function VentasPage({ productos, setproductos, ventas, setventas, }) {
+  const initialRange = getDateRangeByPeriod("today");
   const [productId, setProductId] = useState("");
   const [cantidad, setcantidad] = useState(1);
   const [precio, setPrecio] = useState("");
+  const [activeFilter, setActiveFilter] = useState("today");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [startDate, setStartDate] = useState(initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialRange.endDate);
 
   const selectedProduct = productos.find((p) => p.id === Number(productId));
+  const filteredVentas = ventas.filter((venta) =>
+    startDate || endDate
+      ? (!startDate || venta.date >= startDate) &&
+        (!endDate || venta.date <= endDate)
+      : true
+  );
 
-  const totalCantidad = ventas.reduce(
+  const totalCantidad = filteredVentas.reduce(
     (acc, venta) => acc + venta.cantidad,
     0
   );
 
-  const totalVentas = ventas.reduce(
+  const totalVentas = filteredVentas.reduce(
     (acc, venta) => acc + venta.total,
     0
   );
+
+  const handlePeriodChange = (period) => {
+    setActiveFilter(period);
+
+    if (period !== "custom") {
+      const range = getDateRangeByPeriod(period);
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,6 +182,94 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
 
   return (
     <section>
+      <Modal
+        open={isModalOpen}
+        title="FILTROS"
+        subtitle="Filtra fechas del historial"
+        onClose={() => setIsModalOpen(false)}
+      >
+        <div className="px-6 py-6">
+          <p className="mb-4 text-sm font-bold uppercase text-slate-700">Periodo</p>
+
+          <div className="mb-6 grid grid-cols-2 gap-3">
+            {CALENDAR_PERIOD_OPTIONS.map((option) => {
+              const active = activeFilter === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handlePeriodChange(option.value)}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                    active
+                      ? "border-[#163aaa] bg-[#163aaa] text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mb-4 text-sm font-bold uppercase text-slate-700">
+            Selecciona un rango
+          </p>
+          <span className="text-sm font-semibold text-slate-700">Desde</span>
+          <div className="mb-3 rounded-xl border border-slate-200 px-4 py-3">
+            <label className="flex items-center gap-3 text-slate-500">
+              <Calendar size={18} />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setActiveFilter("custom");
+                  setStartDate(e.target.value);
+                }}
+                className="w-full bg-transparent outline-none"
+              />
+            </label>
+          </div>
+          <span className="text-sm font-semibold text-slate-700">Hasta</span>
+          <div className="rounded-xl border border-slate-200 px-4 py-3">
+            <label className="flex items-center gap-3 text-slate-500">
+              <Calendar size={18} />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setActiveFilter("custom");
+                  setEndDate(e.target.value);
+                }}
+                className="w-full bg-transparent outline-none"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
+          <button
+            type="button"
+            onClick={() => {
+              const range = getDateRangeByPeriod("today");
+              setActiveFilter("today");
+              setStartDate(range.startDate);
+              setEndDate(range.endDate);
+            }}
+            className="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-600"
+          >
+            Limpiar
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="rounded-xl bg-[#163aaa] px-5 py-3 font-semibold text-white"
+          >
+            Aplicar
+          </button>
+        </div>
+      </Modal>
       <div className="grid grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="mb-4 font-bold text-indigo-950">Nueva venta</h3>
@@ -157,9 +330,18 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
           <Table
             title="Historial de ventas"
             subtitle="Registro reciente de movimientos comerciales"
-            badge={`${ventas.length} Ventas`}
+            badge={`${filteredVentas.length} Ventas`}
             className="col-span-2"
             contentClassName="overflow-hidden rounded-xl border border-slate-100"
+            action={
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Abrir filtros
+              </button>
+            }
           >
           <table className="w-full text-sm">
             <thead>
@@ -172,7 +354,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
             </thead>
 
             <tbody>
-              {ventas.map((venta) => (
+              {filteredVentas.map((venta) => (
                 <tr key={venta.id} className="border-t border-slate-100 text-slate-700">
                   <td className="px-4 py-3">{venta.date}</td>
                   <td className="px-4 py-3 font-medium">{venta.nombredelProducto}</td>

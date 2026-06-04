@@ -9,8 +9,10 @@ import Modal from "../ui/Modal";
 
 export default function ProductosPage({ productos, setproductos }) {
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [editingProductId, setEditingProductId] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [tableSearch, setTableSearch] = useState("");
   const [form, setForm] = useState({
     nombre: "",
     categoria: "",
@@ -18,12 +20,19 @@ export default function ProductosPage({ productos, setproductos }) {
     costo: "",
     existencias: "",
   });
-  const isExistingProductSelected = Boolean(selectedProductId);
   const isEditing = Boolean(editingProductId);
+  const isExistingProductSelected = Boolean(selectedProductId) && !isEditing;
+  const normalizedTableSearch = tableSearch.trim().toLowerCase();
+  const filteredProductos = productos.filter((producto) =>
+    !normalizedTableSearch ||
+    producto.nombre.toLowerCase().includes(normalizedTableSearch) ||
+    producto.categoria.toLowerCase().includes(normalizedTableSearch)
+  );
   const capitalizeFirstLetter = (text) =>
   text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
   const resetForm = () => {
     setSelectedProductId("");
+    setProductSearch("");
     setEditingProductId("");
     setForm({
       nombre: "",
@@ -98,6 +107,7 @@ export default function ProductosPage({ productos, setproductos }) {
         precio: Number(form.precio),
         costo: Number(form.costo),
         existencias: Number(form.existencias),
+        date: new Date().toISOString().slice(0, 10),
       };
 
       setproductos([...productos, newProduct]);
@@ -201,23 +211,39 @@ export default function ProductosPage({ productos, setproductos }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <select
+            {isEditing && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+                Estas en modo edicion
+              </div>
+            )}
+
+            <input
               className="input"
-              value={selectedProductId}
+              list="productos-existentes"
+              value={productSearch}
+              placeholder="Buscar producto"
               onChange={(e) => {
-                const nextId = e.target.value;
+                const nextValue = e.target.value;
                 const selectedProduct = productos.find(
-                  (producto) => producto.id === Number(nextId)
+                  (producto) => producto.nombre === nextValue
                 );
 
-                setSelectedProductId(nextId);
+                setProductSearch(nextValue);
                 setEditingProductId("");
 
                 if (!selectedProduct) {
-                  resetForm();
+                  setSelectedProductId("");
+                  setForm({
+                    nombre: "",
+                    categoria: "",
+                    precio: "",
+                    costo: "",
+                    existencias: "",
+                  });
                   return;
                 }
 
+                setSelectedProductId(String(selectedProduct.id));
                 setForm({
                   nombre: selectedProduct.nombre,
                   categoria: selectedProduct.categoria,
@@ -227,14 +253,12 @@ export default function ProductosPage({ productos, setproductos }) {
                 });
               }}
               required
-            >
-              <option value="">Seleccionar producto</option>
+            />
+            <datalist id="productos-existentes">
               {productos.map((producto) => (
-                <option key={producto.id} value={producto.id}>
-                  {producto.nombre}
-                </option>
+                <option key={producto.id} value={producto.nombre} />
               ))}
-            </select>
+            </datalist>
 
             <input
               className="input"
@@ -293,9 +317,18 @@ export default function ProductosPage({ productos, setproductos }) {
         <Table
           title="Lista de productos"
           subtitle="Catalogo actual del negocio"
-          badge={`${productos.length} productos`}
+          badge={`${filteredProductos.length} productos`}
           className="col-span-2"
           contentClassName="overflow-hidden rounded-xl border border-slate-100"
+          action={
+            <input
+              type="text"
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              placeholder="Buscar producto"
+              className="w-52 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 outline-none"
+            />
+          }
         >
           <table className="w-full text-sm">
             <thead>
@@ -310,7 +343,7 @@ export default function ProductosPage({ productos, setproductos }) {
             </thead>
 
             <tbody>
-              {productos.map((producto) => (
+              {filteredProductos.map((producto) => (
                 <tr key={producto.id} className="border-t border-slate-100 text-slate-700">
                   <td className="px-4 py-3 font-medium">{producto.nombre}</td>
                   <td className="px-4 py-3">{producto.categoria}</td>
@@ -323,6 +356,7 @@ export default function ProductosPage({ productos, setproductos }) {
                     <Editar
                       onClick={() => {
                         setSelectedProductId(String(producto.id));
+                        setProductSearch(producto.nombre);
                         setEditingProductId(String(producto.id));
                         setForm({
                           nombre: producto.nombre,

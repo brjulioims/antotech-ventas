@@ -2,6 +2,7 @@ export default function Table({
   title,
   subtitle,
   badge,
+  action,
   children,
   className = "",
   contentClassName = "",
@@ -15,11 +16,14 @@ export default function Table({
           <p className="text-lg font-extrabold text-slate-900">{title}</p>
           {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
         </div>
-        {badge ? (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-            {badge}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {action}
+          {badge ? (
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {badge}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className={contentClassName}>{children}</div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import Dashboard from "./components/pages/Dashboard";
@@ -9,6 +9,7 @@ import InventarioPage from "./components/pages/InventarioPage";
 import ReportsPage from "./components/pages/InformePage";
 import Login from "./components/pages/auth/login";
 import { initialproductos, initialventas, initialgastos } from "./components/services/data";
+import useEstadisticas from "./hooks/useEstadisticas";
 
 const pageByPath = {
   "/login": "login",
@@ -42,20 +43,7 @@ export default function App() {
   const [ventas, setventas] = useState(initialventas);
   const [gastos, setgastos] = useState(initialgastos);
 
-  const estadisticas = useMemo(() => {
-    const totalventas = ventas.reduce((acc, sale) => acc + Number(sale.total), 0);
-    const totalgastos = gastos.reduce((acc, expense) => acc + Number(expense.amount), 0);
-    const profit = totalventas - totalgastos;
-    const lowStock = productos.filter((p) => Number(p.stock) <= 5).length;
-
-    return {
-      totalventas,
-      totalgastos,
-      profit,
-      lowStock,
-      productosCount: productos.length,
-    };
-  }, [productos, ventas, gastos]);
+  const estadisticas = useEstadisticas(productos, ventas, gastos);
 
   useEffect(() => {
     const handlePopState = () => {
