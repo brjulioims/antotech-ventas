@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
 import Modal from "../ui/Modal";
+import PaginationControls from "../ui/PaginationControls";
 
 const CALENDAR_PERIOD_OPTIONS = [
   { value: "today", label: "Hoy" },
@@ -79,6 +80,8 @@ export default function GastosPage({ gastos, setgastos }) {
   });
   const [activeFilter, setActiveFilter] = useState("today");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [startDate, setStartDate] = useState(initialRange.startDate);
   const [endDate, setEndDate] = useState(initialRange.endDate);
 
@@ -93,6 +96,8 @@ export default function GastosPage({ gastos, setgastos }) {
       setStartDate(range.startDate);
       setEndDate(range.endDate);
     }
+
+    setPage(1);
   };
 
   const filteredGastos = gastos.filter((gasto) =>
@@ -100,6 +105,12 @@ export default function GastosPage({ gastos, setgastos }) {
       ? (!startDate || gasto.date >= startDate) &&
         (!endDate || gasto.date <= endDate)
       : true
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredGastos.length / rowsPerPage));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedGastos = filteredGastos.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
   );
 
   const handleSubmit = async (e) => {
@@ -199,6 +210,7 @@ export default function GastosPage({ gastos, setgastos }) {
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setStartDate(e.target.value);
+                  setPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -214,6 +226,7 @@ export default function GastosPage({ gastos, setgastos }) {
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setEndDate(e.target.value);
+                  setPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -229,6 +242,7 @@ export default function GastosPage({ gastos, setgastos }) {
               setActiveFilter("today");
               setStartDate(range.startDate);
               setEndDate(range.endDate);
+              setPage(1);
             }}
             className="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-600"
           >
@@ -313,7 +327,7 @@ export default function GastosPage({ gastos, setgastos }) {
             </thead>
 
             <tbody>
-              {filteredGastos.map((gasto) => (
+              {paginatedGastos.map((gasto) => (
                 <tr key={gasto.id} className="border-t border-slate-100 text-slate-700">
                   <td className="px-4 py-3">{gasto.date}</td>
                   <td className="px-4 py-3 font-medium">{gasto.categoria}</td>
@@ -337,6 +351,17 @@ export default function GastosPage({ gastos, setgastos }) {
               </tr>
             </tfoot>
           </table>
+          <PaginationControls
+            totalItems={filteredGastos.length}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(value) => {
+              setRowsPerPage(value);
+              setPage(1);
+            }}
+            onPrevious={() => setPage(Math.max(1, currentPage - 1))}
+            onNext={() => setPage(Math.min(totalPages, currentPage + 1))}
+          />
         </Table>
       </div>
     </section>

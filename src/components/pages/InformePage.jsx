@@ -13,6 +13,7 @@ import {
 import Card from "../ui/Card";
 import Modal from "../ui/Modal";
 import { FormatoDinero } from "../ui/FormatoDinero";
+import PaginationControls from "../ui/PaginationControls";
 
 const CALENDAR_PERIOD_OPTIONS = [
   { value: "today", label: "Hoy" },
@@ -97,6 +98,9 @@ function getPeriodLabel(period) {
 export default function InformePage({ ventas, gastos }) {
   const [activeFilter, setActiveFilter] = useState("month");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [ventasPage, setVentasPage] = useState(1);
+  const [gastosPage, setGastosPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const initialRange = getDateRangeByPeriod("month");
 
@@ -111,6 +115,9 @@ export default function InformePage({ ventas, gastos }) {
       setStartDate(range.startDate);
       setEndDate(range.endDate);
     }
+
+    setVentasPage(1);
+    setGastosPage(1);
   };
 
   const filteredItems = [...ventas, ...gastos].filter((item) =>
@@ -121,6 +128,18 @@ export default function InformePage({ ventas, gastos }) {
   );
   const filteredVentas = filteredItems.filter((item) => "total" in item);
   const filteredGastos = filteredItems.filter((item) => "monto" in item);
+  const totalVentasPages = Math.max(1, Math.ceil(filteredVentas.length / rowsPerPage));
+  const currentVentasPage = Math.min(ventasPage, totalVentasPages);
+  const paginatedVentas = filteredVentas.slice(
+    (currentVentasPage - 1) * rowsPerPage,
+    currentVentasPage * rowsPerPage
+  );
+  const totalGastosPages = Math.max(1, Math.ceil(filteredGastos.length / rowsPerPage));
+  const currentGastosPage = Math.min(gastosPage, totalGastosPages);
+  const paginatedGastos = filteredGastos.slice(
+    (currentGastosPage - 1) * rowsPerPage,
+    currentGastosPage * rowsPerPage
+  );
 
   const totals = filteredItems.reduce(
     (acc, item) => {
@@ -224,6 +243,8 @@ export default function InformePage({ ventas, gastos }) {
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setStartDate(e.target.value);
+                  setVentasPage(1);
+                  setGastosPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -239,6 +260,8 @@ export default function InformePage({ ventas, gastos }) {
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setEndDate(e.target.value);
+                  setVentasPage(1);
+                  setGastosPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -254,6 +277,8 @@ export default function InformePage({ ventas, gastos }) {
               setActiveFilter("month");
               setStartDate(range.startDate);
               setEndDate(range.endDate);
+              setVentasPage(1);
+              setGastosPage(1);
             }}
             className="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-600"
           >
@@ -396,7 +421,7 @@ export default function InformePage({ ventas, gastos }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredVentas.map((venta) => (
+                {paginatedVentas.map((venta) => (
                   <tr key={venta.id} className="border-t border-slate-100 text-slate-700">
                     <td className="px-4 py-3">{venta.date}</td>
                     <td className="px-4 py-3 font-medium">{venta.nombredelProducto}</td>
@@ -423,6 +448,17 @@ export default function InformePage({ ventas, gastos }) {
                 </tr>
               </tfoot>
             </table>
+            <PaginationControls
+              totalItems={filteredVentas.length}
+              currentPage={currentVentasPage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(value) => {
+                setRowsPerPage(value);
+                setVentasPage(1);
+              }}
+              onPrevious={() => setVentasPage(Math.max(1, currentVentasPage - 1))}
+              onNext={() => setVentasPage(Math.min(totalVentasPages, currentVentasPage + 1))}
+            />
           </div>
         </Card>
 
@@ -450,7 +486,7 @@ export default function InformePage({ ventas, gastos }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredGastos.map((gasto) => (
+                {paginatedGastos.map((gasto) => (
                   <tr key={gasto.id} className="border-t border-slate-100 text-slate-700">
                     <td className="px-4 py-3">{gasto.date}</td>
                     <td className="px-4 py-3 font-medium">{gasto.categoria}</td>
@@ -474,6 +510,17 @@ export default function InformePage({ ventas, gastos }) {
                 </tr>
               </tfoot>
             </table>
+            <PaginationControls
+              totalItems={filteredGastos.length}
+              currentPage={currentGastosPage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(value) => {
+                setRowsPerPage(value);
+                setGastosPage(1);
+              }}
+              onPrevious={() => setGastosPage(Math.max(1, currentGastosPage - 1))}
+              onNext={() => setGastosPage(Math.min(totalGastosPages, currentGastosPage + 1))}
+            />
           </div>
         </Card>
       </div>

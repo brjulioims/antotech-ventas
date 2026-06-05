@@ -6,6 +6,7 @@ import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
 import Editar from "../botones/Editar";
 import Modal from "../ui/Modal";
+import PaginationControls from "../ui/PaginationControls";
 
 export default function ProductosPage({ productos, setproductos }) {
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -13,6 +14,8 @@ export default function ProductosPage({ productos, setproductos }) {
   const [editingProductId, setEditingProductId] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [form, setForm] = useState({
     nombre: "",
     categoria: "",
@@ -27,6 +30,12 @@ export default function ProductosPage({ productos, setproductos }) {
     !normalizedTableSearch ||
     producto.nombre.toLowerCase().includes(normalizedTableSearch) ||
     producto.categoria.toLowerCase().includes(normalizedTableSearch)
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredProductos.length / rowsPerPage));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedProductos = filteredProductos.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
   );
   const capitalizeFirstLetter = (text) =>
   text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
@@ -324,7 +333,10 @@ export default function ProductosPage({ productos, setproductos }) {
             <input
               type="text"
               value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
+              onChange={(e) => {
+                setTableSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Buscar producto"
               className="w-52 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 outline-none"
             />
@@ -343,7 +355,7 @@ export default function ProductosPage({ productos, setproductos }) {
             </thead>
 
             <tbody>
-              {filteredProductos.map((producto) => (
+              {paginatedProductos.map((producto) => (
                 <tr key={producto.id} className="border-t border-slate-100 text-slate-700">
                   <td className="px-4 py-3 font-medium">{producto.nombre}</td>
                   <td className="px-4 py-3">{producto.categoria}</td>
@@ -372,6 +384,17 @@ export default function ProductosPage({ productos, setproductos }) {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            totalItems={filteredProductos.length}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(value) => {
+              setRowsPerPage(value);
+              setPage(1);
+            }}
+            onPrevious={() => setPage(Math.max(1, currentPage - 1))}
+            onNext={() => setPage(Math.min(totalPages, currentPage + 1))}
+          />
         </Table>
       </div>
     </section>

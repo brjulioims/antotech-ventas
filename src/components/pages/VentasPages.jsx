@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import Table from "../ui/Table";
 import Guardar from "../botones/Guardar";
 import Modal from "../ui/Modal";
+import PaginationControls from "../ui/PaginationControls";
 
 const CALENDAR_PERIOD_OPTIONS = [
   { value: "today", label: "Hoy" },
@@ -72,10 +73,13 @@ function getDateRangeByPeriod(period) {
 export default function VentasPage({ productos, setproductos, ventas, setventas, }) {
   const initialRange = getDateRangeByPeriod("today");
   const [productId, setProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [cantidad, setcantidad] = useState(1);
   const [precio, setPrecio] = useState("");
   const [activeFilter, setActiveFilter] = useState("today");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [startDate, setStartDate] = useState(initialRange.startDate);
   const [endDate, setEndDate] = useState(initialRange.endDate);
 
@@ -96,6 +100,12 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
     (acc, venta) => acc + venta.total,
     0
   );
+  const totalPages = Math.max(1, Math.ceil(filteredVentas.length / rowsPerPage));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedVentas = filteredVentas.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   const handlePeriodChange = (period) => {
     setActiveFilter(period);
@@ -105,13 +115,15 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
       setStartDate(range.startDate);
       setEndDate(range.endDate);
     }
+
+    setPage(1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedProduct) {
-      Swal.fire("Campo requerido", "Selecciona un producto", "warning");
+      Swal.fire("Producto no existe", "El producto ingresado no existe", "warning");
       return;
     }
 
@@ -167,6 +179,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
     );
 
     setProductId("");
+    setProductSearch("");
     setcantidad(1);
     setPrecio("");
     Swal.fire({
@@ -225,6 +238,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setStartDate(e.target.value);
+                  setPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -240,6 +254,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
                 onChange={(e) => {
                   setActiveFilter("custom");
                   setEndDate(e.target.value);
+                  setPage(1);
                 }}
                 className="w-full bg-transparent outline-none"
               />
@@ -255,6 +270,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
               setActiveFilter("today");
               setStartDate(range.startDate);
               setEndDate(range.endDate);
+              setPage(1);
             }}
             className="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-600"
           >
@@ -274,25 +290,35 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
         <Card className="p-6">
           <h3 className="mb-4 font-bold text-indigo-950">Nueva venta</h3>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <select
+            <input
               className="input"
-              value={productId}
+              list="productos-venta"
+              value={productSearch}
+              placeholder="Buscar producto"
               onChange={(e) => {
-                const nextId = e.target.value;
-                setProductId(nextId);
+                const nextValue = e.target.value;
+                const producto = productos.find(
+                  (item) => item.nombre === nextValue
+                );
 
-                const producto = productos.find((p) => p.id === Number(nextId));
-                setPrecio(producto ? producto.precio : "");
+                setProductSearch(nextValue);
+
+                if (!producto) {
+                  setProductId("");
+                  setPrecio("");
+                  return;
+                }
+
+                setProductId(String(producto.id));
+                setPrecio(producto.precio);
               }}
               required
-            >
-              <option value="">Seleccionar producto</option>
+            />
+            <datalist id="productos-venta">
               {productos.map((producto) => (
-                <option key={producto.id} value={producto.id}>
-                  {producto.nombre}
-                </option>
+                <option key={producto.id} value={producto.nombre} />
               ))}
-            </select>
+            </datalist>
 
             <input
               className="input"
@@ -354,7 +380,7 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
             </thead>
 
             <tbody>
-              {filteredVentas.map((venta) => (
+              {paginatedVentas.map((venta) => (
                 <tr key={venta.id} className="border-t border-slate-100 text-slate-700">
                   <td className="px-4 py-3">{venta.date}</td>
                   <td className="px-4 py-3 font-medium">{venta.nombredelProducto}</td>
@@ -379,6 +405,17 @@ export default function VentasPage({ productos, setproductos, ventas, setventas,
               </tr>
             </tfoot>
           </table>
+          <PaginationControls
+            totalItems={filteredVentas.length}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(value) => {
+              setRowsPerPage(value);
+              setPage(1);
+            }}
+            onPrevious={() => setPage(Math.max(1, currentPage - 1))}
+            onNext={() => setPage(Math.min(totalPages, currentPage + 1))}
+          />
         </Table>
       </div>
     </section>

@@ -12,11 +12,11 @@ import { FormatoDinero } from "../ui/FormatoDinero";
 export default function Dashboard({ productos, ventas, gastos}) {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const dailyventas = ventas
-    .filter((venta) => venta.date === todayKey)
+  const dailyVentas = ventas.filter((venta) => venta.date === todayKey);
+  const dailyGastos = gastos.filter((gasto) => gasto.date === todayKey);
+  const dailyventas = dailyVentas
     .reduce((acc, venta) => acc + Number(venta.total), 0);
-  const dailygastos = gastos
-    .filter((gasto) => gasto.date === todayKey)
+  const dailygastos = dailyGastos
     .reduce((acc, gasto) => acc + Number(gasto.monto), 0);
   const chartData = [
     {
@@ -34,6 +34,16 @@ export default function Dashboard({ productos, ventas, gastos}) {
       text: "text-rose-600",
     },
   ];
+  const pieData =
+    dailyventas || dailygastos
+      ? chartData
+      : [
+          {
+            name: "Sin movimientos",
+            value: 1,
+            color: "#cbd5e1",
+          },
+        ];
 
   return (
     <section>
@@ -74,7 +84,7 @@ export default function Dashboard({ productos, ventas, gastos}) {
                   formatter={(value) => FormatoDinero(value)}
                 />
                 <Pie
-                  data={chartData}
+                  data={pieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -82,8 +92,10 @@ export default function Dashboard({ productos, ventas, gastos}) {
                   innerRadius={70}
                   outerRadius={110}
                   paddingAngle={4}
+                  label={false}
+                  labelLine={false}
                 >
-                  {chartData.map((entry) => (
+                  {pieData.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
@@ -107,43 +119,55 @@ export default function Dashboard({ productos, ventas, gastos}) {
         <Table
           title="Ultimas ventas"
           subtitle="Movimientos mas recientes"
-          badge={`${ventas.length} total`}
+          badge={`${dailyVentas.length} total`}
           contentClassName="space-y-3"
         >
-          {ventas.slice(-5).reverse().map((venta) => (
-            <div
-              key={venta.id}
-              className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
-            >
-              <div>
-                <p className="font-semibold text-slate-800">{venta.nombredelProducto}</p>
-                <p className="text-slate-500">{venta.date}</p>
+          {dailyVentas.length ? (
+            dailyVentas.slice(-5).reverse().map((venta) => (
+              <div
+                key={venta.id}
+                className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
+              >
+                <div>
+                  <p className="font-semibold text-slate-800">{venta.nombredelProducto}</p>
+                  <p className="text-slate-500">{venta.date}</p>
+                </div>
+                <strong className="text-emerald-600">{FormatoDinero(venta.total)}</strong>
               </div>
-              <strong className="text-emerald-600">{FormatoDinero(venta.total)}</strong>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+              No hay ventas en el día de hoy
+            </p>
+          )}
         </Table>
 
         <Table
           title="Ultimos gastos"
           subtitle="Egresos mas recientes"
-          badge={`${gastos.length} total`}
+          badge={`${dailyGastos.length} total`}
           contentClassName="space-y-3"
         >
-          {gastos.slice(-5).reverse().map((gasto) => (
-            <div
-              key={gasto.id}
-              className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
-            >
-              <div>
-                <p className="font-semibold text-slate-800">{gasto.descripcion}</p>
-                <p className="text-slate-500">{gasto.date}</p>
+          {dailyGastos.length ? (
+            dailyGastos.slice(-5).reverse().map((gasto) => (
+              <div
+                key={gasto.id}
+                className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-sm"
+              >
+                <div>
+                  <p className="font-semibold text-slate-800">{gasto.descripcion}</p>
+                  <p className="text-slate-500">{gasto.date}</p>
+                </div>
+                <strong className="text-rose-600">
+                  {FormatoDinero(gasto.monto)}
+                </strong>
               </div>
-              <strong className="text-rose-600">
-                {FormatoDinero(gasto.monto)}
-              </strong>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+              No hay gastos en el día de hoy
+            </p>
+          )}
         </Table>
       </div>
     </section>

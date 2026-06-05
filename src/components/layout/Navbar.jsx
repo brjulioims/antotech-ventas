@@ -5,7 +5,7 @@ const pageTitles = {
   productos: "Productos",
   ventas: "Ventas",
   gastos: "Gastos",
-  inventorio: "Inventario",
+  inventario: "Inventario",
   reportes: "Reportes",
 };
 
